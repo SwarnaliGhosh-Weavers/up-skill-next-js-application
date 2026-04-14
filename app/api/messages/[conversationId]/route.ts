@@ -1,3 +1,16 @@
+/**
+ * API: GET /api/messages/[conversationId]
+ * Purpose: Fetch all messages for a specific conversation, sorted oldest to newest.
+ * - Populates sender details (name, email)
+ * - Used by ChatWindow on load to show message history
+ *
+ * API: POST /api/messages/[conversationId]
+ * Purpose: Send a new text message in a conversation.
+ * - Saves the message to the Message collection
+ * - Updates the conversation's lastMessage and lastMessageAt fields (for sidebar preview)
+ * - Returns the saved message with populated sender info
+ * - Requires authentication
+ */
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -5,8 +18,6 @@ import { connectDB } from '@/lib/mongodb'
 import Message from '@/lib/models/Message'
 import Conversation from '@/lib/models/Conversation'
 import User from '@/lib/models/User'
-
-// app/api/messages/[conversationId]/route.ts
 
 export async function GET(
   _req: NextRequest,

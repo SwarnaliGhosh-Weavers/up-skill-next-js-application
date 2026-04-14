@@ -62,6 +62,18 @@ app.prepare().then(() => {
       })
     })
 
+    socket.on('delete_message', (data: { conversationId: string; messageId: string; memberIds: string[] }) => {
+      // Notify users who have the chat open
+      socket.to(data.conversationId).emit('delete_message', { messageId: data.messageId })
+      // Notify users who don't have the chat open (via personal room)
+      data.memberIds?.forEach((memberId) => {
+        socket.to(memberId).emit('delete_message_notify', {
+          conversationId: data.conversationId,
+          messageId: data.messageId,
+        })
+      })
+    })
+
     socket.on('disconnect', () => {
       console.log('❌ Client disconnected:', socket.id)
     })

@@ -1,3 +1,11 @@
+/**
+ * API: POST /api/register
+ * Purpose: Register a new user account.
+ * - Validates name, email, password
+ * - Checks if email is already in use
+ * - Hashes password with bcrypt before saving
+ * - Returns the created user (without password)
+ */
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { connectDB } from '@/lib/mongodb'

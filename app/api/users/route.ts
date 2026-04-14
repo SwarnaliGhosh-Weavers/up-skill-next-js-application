@@ -1,3 +1,10 @@
+/**
+ * API: GET /api/users
+ * Purpose: Fetch all registered users except the currently logged-in user.
+ * Used by: NewChatModal and NewGroupModal to show a list of users to start a chat with.
+ * - Requires authentication
+ * - Excludes password field from response
+ */
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'

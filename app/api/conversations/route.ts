@@ -1,3 +1,15 @@
+/**
+ * API: GET /api/conversations
+ * Purpose: Fetch all conversations the logged-in user is a member of.
+ * - Sorted by most recent message (lastMessageAt)
+ * - Populates member details (name, email)
+ *
+ * API: POST /api/conversations
+ * Purpose: Create a new conversation — either single chat or group chat.
+ * - Single chat: Reuses existing conversation if one already exists between the two users
+ * - Group chat: Creates a new group with a name and multiple members
+ * - Requires authentication
+ */
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'

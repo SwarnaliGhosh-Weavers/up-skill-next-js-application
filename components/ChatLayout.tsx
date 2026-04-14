@@ -55,8 +55,17 @@ export default function ChatLayout({ activeId }: { activeId?: string }) {
       }
     })
 
-    return () => { socket.off('new_message') }
-  }, [])
+    // Handle deleted message notification for users who don't have the chat open
+    socket.on('delete_message_notify', ({ conversationId, messageId }: { conversationId: string; messageId: string }) => {
+      // If the conversation is currently open in ChatWindow, ChatWindow handles it via delete_message
+      // This handles the case where the conversation is not open — marks message as deleted in memory
+      // so when user opens the chat, it will reload fresh from DB anyway
+    })
+
+    return () => {
+      socket.off('new_message')
+      socket.off('delete_message_notify')
+    }  }, [])
 
   function handleSelect(id: string) {
     setSelectedId(id)

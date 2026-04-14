@@ -38,9 +38,15 @@ export default function ChatWindow({ conversation, currentUser, onDeleted }: Pro
       setMessages((prev) => [...prev, msg])
     })
 
+    // Listen for message deletions from others
+    socket.on('delete_message', ({ messageId }: { messageId: string }) => {
+      setMessages((prev) => prev.map((m) => m._id === messageId ? { ...m, deleted: true } : m))
+    })
+
     return () => {
       socket.emit('leave', conversation._id)
       socket.off('message')
+      socket.off('delete_message')
     }
   }, [conversation._id])
 
@@ -65,6 +71,15 @@ export default function ChatWindow({ conversation, currentUser, onDeleted }: Pro
       message: msg,
       memberIds,
     })
+  }
+
+  async function deleteMessage(messageId: string) {
+    const res = await fetch(`/api/messages/${conversation._id}/${messageId}`, { method: 'DELETE' })
+    if (res.ok) {
+      setMessages((prev) => prev.map((m) => m._id === messageId ? { ...m, deleted: true } : m))
+      const memberIds = conversation.members?.map((m: any) => m._id || m) ?? []
+      getSocket().emit('delete_message', { conversationId: conversation._id, messageId, memberIds })
+    }
   }
 
   async function deleteConversation() {
@@ -126,11 +141,15 @@ export default function ChatWindow({ conversation, currentUser, onDeleted }: Pro
                   <div className={`px-4 py-2 rounded-2xl text-sm ${
                     isMe ? 'bg-blue-500 text-white rounded-br-sm' : 'bg-white text-gray-800 shadow-sm rounded-bl-sm'
                   }`}>
-                    {msg.text}
+                    {msg.deleted ? (
+                      <span className="italic opacity-60">This message was deleted</span>
+                    ) : (
+                      msg.text
+                    )}
                   </div>
 
-                  {/* Three dot button — only for own messages */}
-                  {isMe && (
+                  {/* Three dot button — only for own messages that aren't deleted */}
+                  {isMe && !msg.deleted && (
                     <div className="relative">
                       <button
                         onClick={(e) => {
@@ -153,7 +172,7 @@ export default function ChatWindow({ conversation, currentUser, onDeleted }: Pro
                           <button
                             onClick={() => {
                               setOpenMenuId(null)
-                              /* implement delete here — msg._id is available */
+                              deleteMessage(msg._id)
                             }}
                             className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition"
                           >

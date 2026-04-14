@@ -1,3 +1,10 @@
+/**
+ * API: DELETE /api/conversations/[id]
+ * Purpose: Delete a conversation (single chat or group) and all its messages.
+ * - Only a member of the conversation can delete it
+ * - Deletes all associated messages from the Message collection
+ * - Requires authentication
+ */
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -20,7 +27,6 @@ export async function DELETE(
   const convo = await Conversation.findById(id)
 
   if (!convo) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  // Only a member can delete
   const isMember = convo.members.some((m: any) => m.toString() === me._id.toString())
   if (!isMember) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
