@@ -14,6 +14,7 @@ export default function ChatWindow({ conversation, currentUser, onDeleted }: Pro
   const [loading, setLoading] = useState(true)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [typingUsers, setTypingUsers] = useState<string[]>([])
   const bottomRef = useRef<HTMLDivElement>(null)
 
   // Load existing messages from DB
@@ -43,10 +44,20 @@ export default function ChatWindow({ conversation, currentUser, onDeleted }: Pro
       setMessages((prev) => prev.map((m) => m._id === messageId ? { ...m, deleted: true } : m))
     })
 
+    // Listen for typing events
+    socket.on('typing', ({ userName, isTyping }: { userName: string; isTyping: boolean }) => {
+      setTypingUsers((prev) =>
+        isTyping
+          ? prev.includes(userName) ? prev : [...prev, userName]
+          : prev.filter((u) => u !== userName)
+      )
+    })
+
     return () => {
       socket.emit('leave', conversation._id)
       socket.off('message')
       socket.off('delete_message')
+      socket.off('typing')
     }
   }, [conversation._id])
 
@@ -197,7 +208,25 @@ export default function ChatWindow({ conversation, currentUser, onDeleted }: Pro
         <div ref={bottomRef} />
       </div>
 
-      <MessageInput onSend={sendMessage} />
+      {/* Typing indicator */}
+      {typingUsers.length > 0 && (
+        <div className="px-6 py-2 flex items-center gap-2 bg-white">
+          <div className="flex gap-1 items-end">
+            <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+            <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+            <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+          </div>
+          <span className="text-xs text-gray-400">
+            {typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
+          </span>
+        </div>
+      )}
+
+      <MessageInput
+        onSend={sendMessage}
+        conversationId={conversation._id}
+        userName={currentUser?.name || ''}
+      />
     </div>
   )
 }

@@ -1,12 +1,38 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
+import { getSocket } from '@/lib/socket'
 
-export default function MessageInput({ onSend }: { onSend: (text: string) => void }) {
+interface Props {
+  onSend: (text: string) => void
+  conversationId: string
+  userName: string
+}
+
+export default function MessageInput({ onSend, conversationId, userName }: Props) {
   const [text, setText] = useState('')
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setText(e.target.value)
+
+    // Emit typing start
+    getSocket().emit('typing', { conversationId, userName, isTyping: true })
+
+    // Clear previous timeout
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+
+    // Emit typing stop after 1.5s of no input
+    typingTimeoutRef.current = setTimeout(() => {
+      getSocket().emit('typing', { conversationId, userName, isTyping: false })
+    }, 1500)
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!text.trim()) return
+    // Stop typing indicator on send
+    getSocket().emit('typing', { conversationId, userName, isTyping: false })
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
     onSend(text.trim())
     setText('')
   }
@@ -16,7 +42,7 @@ export default function MessageInput({ onSend }: { onSend: (text: string) => voi
       <input
         type="text"
         value={text}
-        onChange={(e) => setText(e.target.value)}
+        onChange={handleChange}
         onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) handleSubmit(e as any) }}
         placeholder="Type a message..."
         className="flex-1 border rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"

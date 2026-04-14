@@ -62,6 +62,11 @@ app.prepare().then(() => {
       })
     })
 
+    socket.on('typing', (data: { conversationId: string; userName: string; isTyping: boolean }) => {
+      console.log(`⌨️  ${data.userName} isTyping=${data.isTyping} in room ${data.conversationId}`)
+      socket.to(data.conversationId).emit('typing', data)
+    })
+
     socket.on('delete_message', (data: { conversationId: string; messageId: string; memberIds: string[] }) => {
       // Notify users who have the chat open
       socket.to(data.conversationId).emit('delete_message', { messageId: data.messageId })
