@@ -62,8 +62,9 @@ export default function ChatWindow({ conversation, currentUser, onDeleted }: Pro
     getSocket().emit('message', { conversationId: conversation._id, message: msg })
   }
 
-  async function deleteGroup() {
-    if (!confirm(`Delete "${conversation.name}"? This cannot be undone.`)) return
+  async function deleteConversation() {
+    const label = conversation.isGroup ? `Delete "${conversation.name}"?` : 'Delete this conversation?'
+    if (!confirm(`${label} This cannot be undone.`)) return
     setDeleting(true)
     const res = await fetch(`/api/conversations/${conversation._id}`, { method: 'DELETE' })
     setDeleting(false)
@@ -75,7 +76,9 @@ export default function ChatWindow({ conversation, currentUser, onDeleted }: Pro
     : conversation.members?.find((m: any) => m.email !== currentUser?.email)?.name || 'Chat'
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full" 
+    // style={{backgroundColor: "red"}}
+    >
       <div className="bg-white border-b px-6 py-4 flex items-center gap-3 shadow-sm">
         <div className="w-9 h-9 rounded-full bg-blue-200 flex items-center justify-center text-blue-700 font-semibold">
           {title[0]?.toUpperCase()}
@@ -88,15 +91,13 @@ export default function ChatWindow({ conversation, currentUser, onDeleted }: Pro
             </p>
           )}
         </div>
-        {conversation.isGroup && (
-          <button
-            onClick={deleteGroup}
-            disabled={deleting}
-            className="text-xs text-red-400 hover:text-red-600 disabled:opacity-40 border border-red-200 rounded-lg px-3 py-1 transition"
-          >
-            {deleting ? 'Deleting...' : 'Delete Group'}
-          </button>
-        )}
+        <button
+          onClick={deleteConversation}
+          disabled={deleting}
+          className="text-xs text-red-400 hover:text-red-600 disabled:opacity-40 border border-red-200 rounded-lg px-3 py-1 transition"
+        >
+          {deleting ? 'Deleting...' : conversation.isGroup ? 'Delete Group' : 'Delete Chat'}
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">

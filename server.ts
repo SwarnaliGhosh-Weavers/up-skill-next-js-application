@@ -18,19 +18,28 @@ app.prepare().then(() => {
   })
 
   io.on('connection', (socket) => {
+    console.log('✅ Client connected:', socket.id)
+
     // Join a conversation room
     socket.on('join', (conversationId: string) => {
       socket.join(conversationId)
+      console.log(`📥 ${socket.id} joined room: ${conversationId}`)
     })
 
     // Leave a conversation room
     socket.on('leave', (conversationId: string) => {
       socket.leave(conversationId)
+      console.log(`📤 ${socket.id} left room: ${conversationId}`)
     })
 
     // Broadcast new message to everyone in the room except sender
     socket.on('message', (data: { conversationId: string; message: any }) => {
+      console.log(`💬 Message in room ${data.conversationId} from ${socket.id}`)
       socket.to(data.conversationId).emit('message', data.message)
+    })
+
+    socket.on('disconnect', () => {
+      console.log('❌ Client disconnected:', socket.id)
     })
   })
 

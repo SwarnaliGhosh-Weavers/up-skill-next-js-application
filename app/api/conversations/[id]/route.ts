@@ -20,9 +20,7 @@ export async function DELETE(
   const convo = await Conversation.findById(id)
 
   if (!convo) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  if (!convo.isGroup) return NextResponse.json({ error: 'Only groups can be deleted' }, { status: 400 })
-
-  // Only a member can delete the group
+  // Only a member can delete
   const isMember = convo.members.some((m: any) => m.toString() === me._id.toString())
   if (!isMember) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 

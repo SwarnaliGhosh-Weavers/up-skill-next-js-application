@@ -6,6 +6,8 @@ import Message from '@/lib/models/Message'
 import Conversation from '@/lib/models/Conversation'
 import User from '@/lib/models/User'
 
+// app/api/messages/[conversationId]/route.ts
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ conversationId: string }> }
