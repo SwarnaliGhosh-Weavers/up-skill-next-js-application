@@ -10,9 +10,10 @@ interface Props {
   onSelect: (id: string) => void
   onNewConversation: () => void
   currentUser: any
+  unreadCounts: Record<string, number>
 }
 
-export default function Sidebar({ conversations, selectedId, onSelect, onNewConversation, currentUser }: Props) {
+export default function Sidebar({ conversations, selectedId, onSelect, onNewConversation, currentUser, unreadCounts }: Props) {
   const [showNewChat, setShowNewChat] = useState(false)
   const [showNewGroup, setShowNewGroup] = useState(false)
 
@@ -53,30 +54,41 @@ export default function Sidebar({ conversations, selectedId, onSelect, onNewConv
         {conversations.length === 0 && (
           <p className="text-center text-gray-400 text-sm mt-8">No conversations yet</p>
         )}
-        {conversations.map((convo: any) => (
-          <button
-            key={convo._id}
-            onClick={() => onSelect(convo._id)}
-            className={`w-full text-left px-4 py-3 hover:bg-gray-50 border-b transition ${
-              selectedId === convo._id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-full bg-blue-200 flex items-center justify-center text-blue-700 font-semibold text-sm shrink-0">
-                {getConvoName(convo)[0]?.toUpperCase()}
+        {conversations.map((convo: any) => {
+          const unread = unreadCounts[convo._id] || 0
+          return (
+            <button
+              key={convo._id}
+              onClick={() => onSelect(convo._id)}
+              className={`w-full text-left px-4 py-3 hover:bg-gray-50 border-b transition ${
+                selectedId === convo._id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <div className="relative shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-blue-200 flex items-center justify-center text-blue-700 font-semibold text-sm">
+                    {getConvoName(convo)[0]?.toUpperCase()}
+                  </div>
+                  {unread > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                      {unread > 9 ? '9+' : unread}
+                    </span>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-sm truncate ${unread > 0 ? 'font-bold text-gray-900' : 'font-medium text-gray-800'}`}>
+                    {getConvoName(convo)}
+                  </p>
+                  {convo.lastMessage && (
+                    <p className={`text-xs truncate ${unread > 0 ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>
+                      {convo.lastMessage}
+                    </p>
+                  )}
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="font-medium text-gray-800 text-sm truncate">{getConvoName(convo)}</p>
-                {convo.isGroup && (
-                  <p className="text-xs text-gray-400">{convo.members?.length} members</p>
-                )}
-                {convo.lastMessage && (
-                  <p className="text-xs text-gray-400 truncate">{convo.lastMessage}</p>
-                )}
-              </div>
-            </div>
-          </button>
-        ))}
+            </button>
+          )
+        })}
       </div>
 
       <div className="p-3 border-t text-xs text-gray-400 truncate">

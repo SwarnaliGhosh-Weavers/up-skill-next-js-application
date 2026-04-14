@@ -1,13 +1,27 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import Sidebar from './Sidebar'
 import ChatWindow from './ChatWindow'
+import { registerUser, getSocket } from '@/lib/socket'
 
 export default function ChatLayout({ activeId }: { activeId?: string }) {
   const { data: session } = useSession()
   const [conversations, setConversations] = useState<any[]>([])
   const [selectedId, setSelectedId] = useState<string | undefined>(activeId)
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({})
+
+  // Refs to always have latest values inside socket event handlers
+  const selectedIdRef = useRef<string | undefined>(activeId)
+  const myIdRef = useRef<string | undefined>(undefined)
+
+  // Keep myIdRef in sync with session
+  useEffect(() => {
+    const userId = (session?.user as any)?.id
+    if (!userId) return
+    myIdRef.current = userId
+    registerUser(userId)
+  }, [(session?.user as any)?.id])
 
   async function loadConversations() {
     const res = await fetch('/api/conversations')
@@ -17,6 +31,39 @@ export default function ChatLayout({ activeId }: { activeId?: string }) {
 
   useEffect(() => { loadConversations() }, [])
 
+  // Listen for new_message events
+  useEffect(() => {
+    const socket = getSocket()
+
+    socket.on('new_message', ({ conversationId, message }: { conversationId: string; message: any }) => {
+      const senderId = message.sender?._id?.toString() || message.sender?.toString()
+      if (senderId === myIdRef.current) return
+
+      setConversations((prev) =>
+        prev.map((c) =>
+          c._id === conversationId
+            ? { ...c, lastMessage: message.text, lastMessageAt: message.createdAt }
+            : c
+        )
+      )
+
+      if (selectedIdRef.current !== conversationId) {
+        setUnreadCounts((prev) => ({
+          ...prev,
+          [conversationId]: (prev[conversationId] || 0) + 1,
+        }))
+      }
+    })
+
+    return () => { socket.off('new_message') }
+  }, [])
+
+  function handleSelect(id: string) {
+    setSelectedId(id)
+    selectedIdRef.current = id
+    setUnreadCounts((prev) => ({ ...prev, [id]: 0 }))
+  }
+
   const selected = conversations.find((c) => c._id === selectedId)
 
   return (
@@ -24,9 +71,10 @@ export default function ChatLayout({ activeId }: { activeId?: string }) {
       <Sidebar
         conversations={conversations}
         selectedId={selectedId}
-        onSelect={setSelectedId}
+        onSelect={handleSelect}
         onNewConversation={loadConversations}
         currentUser={session?.user}
+        unreadCounts={unreadCounts}
       />
       <main className="flex-1 flex flex-col">
         {selected ? (

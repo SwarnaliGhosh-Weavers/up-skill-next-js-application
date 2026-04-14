@@ -20,22 +20,46 @@ app.prepare().then(() => {
   io.on('connection', (socket) => {
     console.log('✅ Client connected:', socket.id)
 
-    // Join a conversation room
+    // Each user joins their own personal room using their userId
+    // This way they receive messages even if they haven't opened the conversation
+    socket.on('register', (userId: string) => {
+      socket.join(userId)
+      console.log(`👤 ${socket.id} registered as user: ${userId}`)
+    })
+
+    // Join a conversation room (when user opens a chat)
     socket.on('join', (conversationId: string) => {
       socket.join(conversationId)
       console.log(`📥 ${socket.id} joined room: ${conversationId}`)
     })
 
-    // Leave a conversation room
+    // Leave a conversation room (when user switches chat)
     socket.on('leave', (conversationId: string) => {
       socket.leave(conversationId)
       console.log(`📤 ${socket.id} left room: ${conversationId}`)
     })
 
-    // Broadcast new message to everyone in the room except sender
-    socket.on('message', (data: { conversationId: string; message: any }) => {
+    // When a message is sent:
+    // 1. Emit to the conversation room (for users who have the chat open)
+    // 2. Emit to each member's personal room (for users who haven't opened the chat)
+    socket.on('message', (data: {
+      conversationId: string
+      message: any
+      memberIds: string[]  // all members of the conversation
+    }) => {
       console.log(`💬 Message in room ${data.conversationId} from ${socket.id}`)
+
+      // Send to conversation room (receiver who has chat open gets it here)
       socket.to(data.conversationId).emit('message', data.message)
+
+      // Send to each member's personal room (receiver who hasn't opened chat gets it here)
+      // This ensures sidebar updates and notification even without opening the chat
+      data.memberIds.forEach((memberId) => {
+        socket.to(memberId).emit('new_message', {
+          conversationId: data.conversationId,
+          message: data.message,
+        })
+      })
     })
 
     socket.on('disconnect', () => {
